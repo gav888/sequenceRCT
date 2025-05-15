@@ -1,52 +1,3 @@
-
-#' Simulate behavior sequences using a Markov model with optional dropout
-#'
-#' @param n_individuals Integer; number of subjects to simulate.
-#' @param n_time_points Integer; number of time points per subject.
-#' @param base_transitions Numeric matrix; base transition probabilities (states × states).
-#' @param characteristics Data frame; one row per individual containing named columns `responsiveness` and `prior_engagement`.
-#' @param group Character vector of length n_individuals; group assignment per individual (e.g., "Treatment" or "Control").
-#' @param dropout_rate Numeric between 0 and 1; probability of dropout at each time point.
-#' @param scaling Numeric; treatment effect scaling factor (only applied for "Treatment" group).
-#' @return Integer matrix of dimension n_individuals × n_time_points with state codes.
-#' @export
-simulate_sequences <- function(n_individuals,
-                               n_time_points,
-                               base_transitions,
-                               characteristics,
-                               group,
-                               dropout_rate = 0,
-                               scaling = 1) {
-  seq_mat <- matrix(NA_integer_, nrow = n_individuals, ncol = n_time_points)
-  for (i in seq_len(n_individuals)) {
-    init_probs <- c(0.6, 0.3, 0.1)
-    if (characteristics$prior_engagement[i] > 0.7) {
-      init_probs <- c(0.3, 0.4, 0.3)
-    }
-    seq_mat[i, 1] <- sample(seq_along(init_probs) - 1, 1, prob = init_probs)
-    dropout_time <- if (runif(1) < dropout_rate) sample(2:n_time_points, 1) else n_time_points + 1
-    for (t in 2:min(dropout_time, n_time_points)) {
-      indiv <- list(
-        responsiveness = characteristics$responsiveness[i],
-        prior_engagement = characteristics$prior_engagement[i]
-      )
-      trans <- base_transitions
-      if (group[i] == "Treatment") {
-        te <- indiv$responsiveness * exp(-0.2 * t) * scaling
-        trans[1,2] <- trans[1,2] + te * 0.1
-        trans[2,3] <- trans[2,3] + te * 0.15
-        trans <- t(apply(trans, 1, function(x) x / sum(x)))
-      }
-      eng_eff <- indiv$prior_engagement * 0.2
-      trans[,3] <- trans[,3] + eng_eff
-      trans <- t(apply(trans, 1, function(x) x / sum(x)))
-      prev_state <- seq_mat[i, t - 1] + 1
-      seq_mat[i, t] <- sample(seq_len(ncol(trans)) - 1, 1, prob = trans[prev_state, ])
-    }
-  }
-  seq_mat
-}
-
 #' Compute empirical transition probability matrix from sequences
 #'
 #' @param sequences Integer matrix; rows = individuals, cols = time points, values = state codes starting at 0.
@@ -144,4 +95,179 @@ run_sequence_clustering <- function(seqdata, k = 3, method = "ward.D2", distance
   distm <- TraMineR::seqdist(seqdata, method = distance)
   clust <- stats::hclust(as.dist(distm), method = method)
   cutree(clust, k = k)
+}
+
+#' Encode raw state columns into integer matrix for TraMineR
+#'
+#' @param data Data frame containing state columns.
+#' @param state_cols Character vector; names of state columns to encode.
+#' @param state_labels Optional character vector; explicit labels for states.
+#' @return A list with elements:
+#'   \item{seq_mat}{Integer matrix of encoded states.}
+#'   \item{labels}{Character vector of state labels.}
+#'   \item{alphabet}{Integer vector of unique codes.}
+#' @export
+encode_states <- function(data, state_cols, state_labels = NULL) {
+  raw <- data[, state_cols, drop = FALSE]
+  if (!is.null(state_labels)) {
+    # Use provided labels
+    seq_mat <- apply(raw, 2, function(x) as.integer(factor(x, levels = state_labels)) - 1)
+    labels <- state_labels
+    alphabet <- seq_along(state_labels) - 1
+  } else {
+    # Infer labels from data
+    uniq <- sort(unique(as.vector(raw)))
+    labels <- as.character(uniq)
+    seq_mat <- apply(raw, 2, function(x) as.integer(factor(x, levels = uniq)) - 1)
+    alphabet <- uniq
+  }
+  list(seq_mat = seq_mat, labels = labels, alphabet = alphabet)
+}
+
+#' High-level analysis pipeline for RCT sequence data
+#'
+#' @param data Data frame containing one row per individual, with group and state columns.
+#' @param group_col String; name of the column containing group labels (e.g. "Treatment" or "Control").
+#' @param state_cols Character vector; names of columns representing states at each time point.
+#' @param state_labels Character vector; optional labels for unique states in the order of \code{state_cols}.
+#' @param palette Optional color vector for states.
+#' @return A list with elements:
+#'   \item{seqdata}{A TraMineR sequence object.}
+#'   \item{transitions}{Data frame of From, To, Probability, Group for all groups.}
+#'   \item{complexity}{Data frame of Entropy, Turbulence, Volatility, and Group.}
+#'   \item{clusters}{Integer vector of cluster membership for each individual.}
+#' @export
+analyze_rct_sequences <- function(data, group_col, state_cols, state_labels = NULL, palette = NULL) {
+  # Extract group factor
+  group <- as.factor(data[[group_col]])
+  # Encode raw state columns robustly
+  enc <- encode_states(data, state_cols, state_labels)
+  seq_mat <- enc$seq_mat
+  labels <- enc$labels
+  alphabet <- enc$alphabet
+  # Create TraMineR sequence object
+  seqdata <- TraMineR::seqdef(seq_mat, alphabet = alphabet, states = labels, labels = labels)
+  # Compute empirical transitions by group
+  transitions_list <- lapply(levels(group), function(g) {
+    mat <- calculate_empirical_transitions(seq_mat[group == g, , drop = FALSE])
+    df <- as.data.frame(mat)
+    df$From <- labels
+    df_long <- reshape2::melt(df, id.vars = "From", variable.name = "To", value.name = "Probability")
+    df_long$Group <- g
+    df_long
+  })
+  transitions <- do.call(rbind, transitions_list)
+  # Compute complexity measures and add group
+  complexity <- compute_complexity_measures(seqdata)
+  complexity$Group <- group
+  # Perform clustering (default k = 3)
+  clusters <- run_sequence_clustering(seqdata)
+
+  # Run statistical tests
+  complexity_tests <- test_complexity_measures(complexity)
+  cluster_tests    <- test_cluster_membership(clusters, group)
+
+  # Generate default plots
+  plots <- list(
+    state_distribution   = plot_state_distribution(seqdata, group, palette = palette),
+    sequence_index       = plot_sequence_index(seqdata, group, palette = palette),
+    markov_transitions   = plot_markov_transitions(transitions, palette = palette),
+    complexity_measures  = plot_complexity_measures(complexity),
+    cluster_membership   = plot_cluster_membership(clusters, group)
+  )
+
+  # Return a list of results
+  list(
+    seqdata = seqdata,
+    transitions = transitions,
+    complexity = complexity,
+    clusters = clusters,
+    complexity_tests = complexity_tests,
+    cluster_tests    = cluster_tests,
+    plots            = plots
+  )
+}
+
+#' Format a transition probability matrix for visualization
+#'
+#' @param trans_mat Numeric matrix; transition probabilities (states × states).
+#' @param labels Character vector; state labels corresponding to rows/columns of \code{trans_mat}.
+#' @return Data frame with columns \code{From}, \code{To}, and \code{Probability}.
+#' @export
+format_transitions_for_viz <- function(trans_mat, labels) {
+  df <- as.data.frame(trans_mat)
+  colnames(df) <- labels
+  df$From <- labels
+  df_long <- reshape2::melt(
+    df,
+    id.vars = "From",
+    variable.name = "To",
+    value.name = "Probability"
+  )
+  df_long
+}
+
+#' Test between-group differences in complexity measures
+#'
+#' @param complexity_df Data frame; output of \code{compute_complexity_measures()}, must include a \code{Group} column.
+#' @param measures Character vector; names of complexity metrics to test (e.g., c("Entropy","Turbulence","Volatility")).
+#' @return Named list of lists, each with elements \code{wilcox} (Wilcoxon test object) and \code{effect_size} (Cliff's delta object).
+#' @export
+test_complexity_measures <- function(complexity_df, measures = c("Entropy", "Turbulence", "Volatility")) {
+  results <- lapply(measures, function(m) {
+    formula <- stats::as.formula(paste(m, "~ Group"))
+    wt <- stats::wilcox.test(formula, data = complexity_df)
+    es <- effsize::cliff.delta(formula, data = complexity_df)
+    list(wilcox = wt, effect_size = es)
+  })
+  names(results) <- measures
+  results
+}
+
+#' Test association between cluster membership and group
+#'
+#' @param clusters Integer vector; cluster membership for each individual.
+#' @param group Factor or character vector; group labels for each individual.
+#' @return A list with elements \code{contingency_table} (table) and \code{chi_square} (chisq.test object).
+#' @export
+test_cluster_membership <- function(clusters, group) {
+  tab <- table(Cluster = clusters, Group = group)
+  chisq <- stats::chisq.test(tab)
+  list(contingency_table = tab, chi_square = chisq)
+}
+
+#' Plot complexity measures by group
+#'
+#' @param complexity_df Data frame returned by \code{compute_complexity_measures()}, must include \code{Group}.
+#' @param measures Character vector; complexity metrics to plot (default c("Entropy","Turbulence","Volatility")).
+#' @return ggplot object with boxplots and facets for each measure.
+#' @export
+plot_complexity_measures <- function(complexity_df, measures = c("Entropy", "Turbulence", "Volatility")) {
+  long <- reshape2::melt(
+    complexity_df,
+    id.vars = "Group",
+    measure.vars = measures,
+    variable.name = "Measure",
+    value.name = "Value"
+  )
+  ggplot(long, aes(x = Group, y = Value, fill = Group)) +
+    geom_boxplot() +
+    facet_wrap(~ Measure, scales = "free_y") +
+    theme_minimal() +
+    theme(legend.position = "none")
+}
+
+#' Plot cluster membership distribution by group
+#'
+#' @param clusters Integer vector; output of \code{run_sequence_clustering} or element from \code{analyze_rct_sequences}.
+#' @param group Factor or character vector; group labels corresponding to clusters.
+#' @return ggplot object of cluster frequencies by group.
+#' @export
+plot_cluster_membership <- function(clusters, group) {
+  df <- data.frame(Cluster = factor(clusters), Group = as.factor(group))
+  tab <- as.data.frame(table(df))
+  ggplot(tab, aes(x = Cluster, y = Freq, fill = Group)) +
+    geom_col(position = "dodge") +
+    labs(y = "Count") +
+    theme_minimal()
 }

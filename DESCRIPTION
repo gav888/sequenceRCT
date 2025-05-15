@@ -4,29 +4,26 @@ Title: Sequence Analysis Tools for Randomized Controlled Trials
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Giuseppe Alessandro", "Veltri",
+      email = "g.a.veltri@proton.me",
       role = c("aut", "cre")
     )
   )
-Description: Provides agnostic functions to simulate, analyze, and visualize behavioral sequences
-    from randomized controlled trials. Includes tools for Markov-based sequence simulation,
-    empirical transition estimation, complexity metrics (entropy, turbulence, volatility),
-    hierarchical clustering, and alluvial transition diagrams.
+Description: Provides agnostic functions to analyze behavioral sequence data from randomized controlled trials.
+    Offers tools for encoding raw state data, estimating empirical transition probabilities,
+    computing complexity measures (entropy, turbulence, volatility), performing hierarchical clustering,
+    running statistical tests for group differences (Wilcoxon, Cliff's delta, Chi-square),
+    and visualizing results via sequence plots and alluvial transition diagrams.
 License: GPL-3
 Imports:
-    MASS,
     TraMineR,
     ggplot2,
     ggalluvial,
     reshape2,
-    effsize,
-    pander,
-    dplyr,
-    gridExtra,
-    corrplot
+    effsize
 Encoding: UTF-8
 LazyData: true
-
-URL: https://github.com/yourusername/sequenceRCT
-BugReports: https://github.com/yourusername/sequenceRCT/issues
+URL: https://github.com/gav888/sequenceRCT
+BugReports: https://github.com/gav888/sequenceRCT/issues
+Roxygen: list(roclets = c("rd"))
+RoxygenNote: 7.3.2
