@@ -74,7 +74,9 @@ plot_markov_transitions <- function(transitions, palette = NULL) {
 #' @return Data frame with Entropy, Turbulence, Volatility for each sequence.
 #' @export
 compute_complexity_measures <- function(seqdata) {
-  mat <- as.matrix(seqdata)
+  # Extract the underlying numeric code matrix from the sequence object
+  mat <- unclass(seqdata)
+  if (!is.matrix(mat)) mat <- as.matrix(mat)
   n_time <- ncol(mat)
   data.frame(
     Entropy    = TraMineR::seqient(seqdata),
