@@ -1,5 +1,7 @@
 # sequenceRCT
 
+<img src="https://github.com/user-attachments/assets/24ce7601-a82b-4f59-9e15-d3bc143e62b9" width="50%" alt="sequenceRCTicon">
+
 **Sequence Analysis Tools for Randomized Controlled Trials**
 
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/gav888/sequenceRCT/releases)  
