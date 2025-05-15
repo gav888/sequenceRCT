@@ -1,0 +1,32 @@
+Package: sequenceRCT
+Type: Package
+Title: Sequence Analysis Tools for Randomized Controlled Trials
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Jane", "Doe",
+      email = "jane@example.com",
+      role = c("aut", "cre")
+    )
+  )
+Description: Provides agnostic functions to simulate, analyze, and visualize behavioral sequences
+    from randomized controlled trials. Includes tools for Markov-based sequence simulation,
+    empirical transition estimation, complexity metrics (entropy, turbulence, volatility),
+    hierarchical clustering, and alluvial transition diagrams.
+License: GPL-3
+Imports:
+    MASS,
+    TraMineR,
+    ggplot2,
+    ggalluvial,
+    reshape2,
+    effsize,
+    pander,
+    dplyr,
+    gridExtra,
+    corrplot
+Encoding: UTF-8
+LazyData: true
+
+URL: https://github.com/yourusername/sequenceRCT
+BugReports: https://github.com/yourusername/sequenceRCT/issues
