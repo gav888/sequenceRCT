@@ -213,7 +213,10 @@ format_transitions_for_viz <- function(trans_mat, labels) {
 #'
 #' @param complexity_df Data frame; output of \code{compute_complexity_measures()}, must include a \code{Group} column.
 #' @param measures Character vector; names of complexity metrics to test (e.g., c("Entropy","Turbulence","Volatility")).
-#' @return Named list of lists, each with elements \code{wilcox} (Wilcoxon test object) and \code{effect_size} (Cliff's delta object).
+#' @return Named list with one entry per measure.
+#'   For exactly two groups, each entry contains \code{wilcox} (Wilcoxon test object)
+#'   and \code{effect_size} (Cliff's delta object).
+#'   For more than two groups, each entry contains \code{kruskal} (Kruskal-Wallis test object).
 #' @export
 test_complexity_measures <- function(complexity_df, measures = c("Entropy", "Turbulence", "Volatility")) {
   {

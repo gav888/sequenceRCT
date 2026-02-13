@@ -15,7 +15,10 @@ test_complexity_measures(
 \item{measures}{Character vector; names of complexity metrics to test (e.g., c("Entropy","Turbulence","Volatility")).}
 }
 \value{
-Named list of lists, each with elements \code{wilcox} (Wilcoxon test object) and \code{effect_size} (Cliff's delta object).
+Named list with one entry per measure.
+  For exactly two groups, each entry contains \code{wilcox} (Wilcoxon test object)
+  and \code{effect_size} (Cliff's delta object).
+  For more than two groups, each entry contains \code{kruskal} (Kruskal-Wallis test object).
 }
 \description{
 Test between-group differences in complexity measures

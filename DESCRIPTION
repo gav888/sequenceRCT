@@ -1,7 +1,7 @@
 Package: sequenceRCT
 Type: Package
 Title: Sequence Analysis Tools for Randomized Controlled Trials
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
     person(
       "Giuseppe Alessandro", "Veltri",
@@ -12,7 +12,8 @@ Authors@R: c(
 Description: Provides agnostic functions to analyze behavioral sequence data from randomized controlled trials.
     Offers tools for encoding raw state data, estimating empirical transition probabilities,
     computing complexity measures (entropy, turbulence, volatility), performing hierarchical clustering,
-    running statistical tests for group differences (Wilcoxon, Cliff's delta, Chi-square),
+    running statistical tests for group differences (Wilcoxon, Cliff's delta,
+    Kruskal-Wallis, Chi-square),
     and visualizing results via sequence plots and alluvial transition diagrams.
 License: GPL-3
 Imports:
@@ -21,9 +22,12 @@ Imports:
     ggalluvial,
     reshape2,
     effsize
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/gav888/sequenceRCT
 BugReports: https://github.com/gav888/sequenceRCT/issues
 Roxygen: list(roclets = c("rd"))
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
