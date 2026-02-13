@@ -4,24 +4,44 @@
 
 **Sequence Analysis Tools for Randomized Controlled Trials**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/gav888/sequenceRCT/releases)  
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/gav888/sequenceRCT/releases)
 [![License: GPL-3](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ## Overview
 
-`sequenceRCT` provides agnostic functions to analyze behavioral sequence data from randomized controlled trials. It includes utilities to:
+`sequenceRCT` is an R package for time-sensitive analysis of behavioral trajectories in randomized controlled trials. Instead of focusing only on endpoint differences, it helps you analyze how participants move across discrete states over time (e.g., relapse, stability, improvement).
 
-- Encode raw state data (`encode_states`)
-- Estimate empirical transition probabilities (`calculate_empirical_transitions`)
-- Compute complexity measures: entropy, turbulence, volatility (`compute_complexity_measures`)
-- Perform hierarchical clustering on sequences (`run_sequence_clustering`)
-- Run statistical tests for group differences (Wilcoxon, Cliff’s delta, Chi-square) (`test_complexity_measures`, `test_cluster_membership`)
-- Format and visualize results:
-  - Sequence plots (`plot_state_distribution`, `plot_sequence_index`)
-  - Alluvial transition diagrams (`plot_markov_transitions`)
-  - Complexity boxplots (`plot_complexity_measures`)
-  - Cluster membership bar charts (`plot_cluster_membership`)
-- A single high-level pipeline function (`analyze_rct_sequences`) that ties everything together.
+The package supports an end-to-end workflow:
+
+- state encoding from raw panel data
+- group-wise transition matrix estimation
+- sequence complexity profiling (entropy, turbulence, volatility)
+- trajectory clustering
+- inferential tests for between-group differences
+- publication-ready visualizations
+
+## Typical Use Case
+
+Use `sequenceRCT` when your RCT data has:
+
+- one row per participant
+- repeated state measurements at ordered time points (e.g., `T1`, `T2`, `T3`, ...)
+- a treatment/control grouping variable
+
+This is common in behavioral public policy settings where timing, persistence, and relapse are central to intervention design.
+
+## Main Functions
+
+| Function | Purpose |
+|---|---|
+| `analyze_rct_sequences()` | Runs the full pipeline and returns sequences, transitions, complexity, tests, clusters, and plots |
+| `encode_states()` | Converts raw state labels to coded sequence matrices |
+| `calculate_empirical_transitions()` | Estimates transition probabilities between adjacent time points |
+| `compute_complexity_measures()` | Computes entropy, turbulence, and volatility for each participant sequence |
+| `run_sequence_clustering()` | Clusters trajectories using TraMineR distances + hierarchical clustering |
+| `test_complexity_measures()` | Tests group differences in complexity metrics |
+| `test_cluster_membership()` | Tests group-cluster association (chi-square) |
+| `plot_*()` helpers | Visualizes state distributions, sequence indices, transitions, complexity, and clusters |
 
 ## Installation
 
@@ -39,12 +59,12 @@ Or with `remotes`:
 remotes::install_github("gav888/sequenceRCT")
 ```
 
-## Usage
+## Quick Start
 
 ```r
 library(sequenceRCT)
 
-# Prepare a sample RCT dataset
+# Example RCT dataset with three repeated state measurements
 df <- data.frame(
   group = rep(c("Treatment", "Control"), each = 10),
   T1 = sample(c("Lost", "Stable", "Gained"), 20, replace = TRUE),
@@ -52,7 +72,7 @@ df <- data.frame(
   T3 = sample(c("Lost", "Stable", "Gained"), 20, replace = TRUE)
 )
 
-# Run the full analysis pipeline
+# Run the full sequence analysis pipeline
 results <- analyze_rct_sequences(
   data = df,
   group_col = "group",
@@ -60,10 +80,12 @@ results <- analyze_rct_sequences(
   state_labels = c("Lost", "Stable", "Gained")
 )
 
-# View complexity measures
+# Core outputs
 head(results$complexity)
+results$complexity_tests
+results$cluster_tests
 
-# Display default plots
+# Default plots
 print(results$plots$state_distribution)
 print(results$plots$sequence_index)
 print(results$plots$markov_transitions)
@@ -71,9 +93,30 @@ print(results$plots$complexity_measures)
 print(results$plots$cluster_membership)
 ```
 
+## Citation
+
+If you use `sequenceRCT`, please cite:
+
+Veltri GA (2026) *Time-sensitive RCTs in behavioral public policy: a pragmatic framework using sequence methods, personalization, and reinforcement learning*. Frontiers in Behavioral Economics, 5:1684887. [https://doi.org/10.3389/frbhe.2026.1684887](https://doi.org/10.3389/frbhe.2026.1684887)
+
+BibTeX:
+
+```bibtex
+@article{veltri2026sequenceRCT,
+  author = {Veltri, Giuseppe Alessandro},
+  title = {Time-sensitive RCTs in behavioral public policy: a pragmatic framework using sequence methods, personalization, and reinforcement learning},
+  journal = {Frontiers in Behavioral Economics},
+  year = {2026},
+  volume = {5},
+  pages = {1684887},
+  doi = {10.3389/frbhe.2026.1684887},
+  url = {https://doi.org/10.3389/frbhe.2026.1684887}
+}
+```
+
 ## Contributing
 
-Please file issues or pull requests at [https://github.com/gav888/sequenceRCT](https://github.com/gav888/sequenceRCT).
+Issues and pull requests are welcome at [https://github.com/gav888/sequenceRCT](https://github.com/gav888/sequenceRCT).
 
 ## License
 

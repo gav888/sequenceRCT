@@ -1,0 +1,22 @@
+citHeader("To cite package 'sequenceRCT' in publications, please use:")
+
+citEntry(
+  entry = "Article",
+  title = "Time-sensitive RCTs in behavioral public policy: a pragmatic framework using sequence methods, personalization, and reinforcement learning",
+  author = personList(
+    as.person("Giuseppe Alessandro Veltri")
+  ),
+  journal = "Frontiers in Behavioral Economics",
+  year = "2026",
+  volume = "5",
+  pages = "1684887",
+  doi = "10.3389/frbhe.2026.1684887",
+  url = "https://doi.org/10.3389/frbhe.2026.1684887",
+  textVersion = paste(
+    "Veltri GA (2026).",
+    "'Time-sensitive RCTs in behavioral public policy: a pragmatic framework",
+    "using sequence methods, personalization, and reinforcement learning'.",
+    "Frontiers in Behavioral Economics, 5, 1684887.",
+    "doi:10.3389/frbhe.2026.1684887."
+  )
+)
