@@ -216,14 +216,27 @@ format_transitions_for_viz <- function(trans_mat, labels) {
 #' @return Named list of lists, each with elements \code{wilcox} (Wilcoxon test object) and \code{effect_size} (Cliff's delta object).
 #' @export
 test_complexity_measures <- function(complexity_df, measures = c("Entropy", "Turbulence", "Volatility")) {
-  results <- lapply(measures, function(m) {
-    formula <- stats::as.formula(paste(m, "~ Group"))
-    wt <- stats::wilcox.test(formula, data = complexity_df)
-    es <- effsize::cliff.delta(formula, data = complexity_df)
-    list(wilcox = wt, effect_size = es)
-  })
-  names(results) <- measures
-  results
+  {
+    # Sanitize grouping factor: drop any unused levels
+    complexity_df$Group <- droplevels(as.factor(complexity_df$Group))
+    # Determine number of groups
+    groups <- levels(complexity_df$Group)
+
+    # Perform appropriate test based on group count
+    results <- lapply(measures, function(m) {
+      formula <- stats::as.formula(paste(m, "~ Group"))
+      if (length(groups) == 2) {
+        wt <- stats::wilcox.test(formula, data = complexity_df)
+        es <- effsize::cliff.delta(formula, data = complexity_df)
+        list(wilcox = wt, effect_size = es)
+      } else {
+        kt <- stats::kruskal.test(formula, data = complexity_df)
+        list(kruskal = kt)
+      }
+    })
+    names(results) <- measures
+    results
+  }
 }
 
 #' Test association between cluster membership and group
